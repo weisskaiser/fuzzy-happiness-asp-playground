@@ -1,0 +1,28 @@
+﻿
+<label class="form-label" for="customSelect-@Label">@Label</label>
+<select id="customSelect-@Label" value="@Selected" class="form-select" @onchange="OnSelectedChanged">
+    <option value=""></option>
+    @foreach (var option in Options)
+    {
+        <option value="@option.value">@option.label</option>
+    }
+</select>
+
+
+@code {
+    [Parameter]
+    public IEnumerable<(string value, string label)> Options { get; set; } = Array.Empty<(string value, string label)>();
+    [Parameter]
+    public string Selected { get; set; } = string.Empty;
+    [Parameter]
+    public string Label { get; set; } = string.Empty;
+    [Parameter]
+    public EventCallback<string> SelectedChanged { get; set; }
+
+    private Task OnSelectedChanged(ChangeEventArgs e)
+    {
+        Selected = e.Value as string ?? string.Empty;
+
+        return SelectedChanged.InvokeAsync(Selected);
+    }
+}

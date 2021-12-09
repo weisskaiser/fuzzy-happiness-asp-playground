@@ -1,0 +1,80 @@
+﻿@inject IHttpClientFactory ClientFactory
+@inject NavigationManager MyNavigationManager
+
+
+<h3 class="card-title">Post Message - @RoomName</h3>
+
+        @if (shouldRender)
+{
+    <div class="@(isError ? "alert alert-danger" : "alert alert-success")">
+        <h1>@title</h1>
+        <p>@message</p>
+    </div>
+}
+
+<EditForm Model="@createMessageEvent" OnValidSubmit="@HandleValidSubmit">
+
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <InputText id="name" class="form-control" @bind-Value="createMessageEvent.Name" />
+    </div>
+    <div class="mb-3">
+        <label for="content" class="form-label">Content</label>
+        <InputText id="content" class="form-control" @bind-Value="createMessageEvent.Content" />
+    </div>
+    <div class="mb-3">
+        <CustomSelect Label="Country" Options="countries" @bind-Selected="createMessageEvent.Country" />
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+@code {
+    CreateMessageEvent createMessageEvent = new();
+    bool shouldRender = false;
+    bool isError = false;
+    string title = string.Empty;
+    string message = string.Empty;
+    IEnumerable<(string value, string label)> countries = new (string, string)[]
+        {
+        ("MDG", "Madagascar"),
+        ("MWI", "Malawi"),
+        ("MLI", "Mali"),
+        ("BRA", "Brazil"),
+        ("USA", "United States of America"),
+        };
+
+    [Parameter]
+    public string RoomName { get; set; } = string.Empty;
+
+    private async Task HandleValidSubmit()
+    {
+        using var requestBodyStream = new MemoryStream();
+
+        createMessageEvent.RoomName = RoomName;
+
+        await JsonSerializer.SerializeAsync(requestBodyStream, createMessageEvent);
+        requestBodyStream.Position = 0;
+        using var request = new HttpRequestMessage(HttpMethod.Post, "api/Queue/Messages")
+            {
+                Content = new StreamContent(requestBodyStream),
+            };
+        request.Headers.Add("User-Agent", "RazerComponentRequest");
+        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        using var client = ClientFactory.CreateClient();
+        client.BaseAddress = new Uri(MyNavigationManager.BaseUri);
+        using var response = await client.SendAsync(request);
+
+        shouldRender = true;
+
+        if (response.IsSuccessStatusCode)
+        {
+            message = "Message was posted!";
+        }
+        else
+        {
+            message = $"Could not post message, status = {response.StatusCode}. " + await response.Content.ReadAsStringAsync();
+        }
+    }
+}

@@ -1,0 +1,36 @@
+﻿@page
+@using QueueChat.Components
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<form method="post">
+    Room name: <input asp-for="NewChatRoom.Name" />
+    <input type="submit" />
+</form>
+
+@foreach (var chat in Model.ChatRooms)
+{
+
+    <div class="card">
+        <div class="card-body">
+            <component type="typeof(PostMessage)"
+                   render-mode="ServerPrerendered"
+                   param-RoomName="@chat.Name" />
+            @if (chat.Members.Any())
+            {
+                <div class="container">
+                    <h4>Members</h4>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var member in chat.Members)
+                        {
+                            <li class="list-group-item"><span class="fw-bold">@member.Name</span> from @member.Country</li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+    </div>
+
+}
